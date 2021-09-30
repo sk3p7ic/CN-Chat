@@ -1,3 +1,5 @@
+from typing import Any
+
 from enum import Enum
 import socket
 import os
@@ -51,6 +53,7 @@ class MessageHeader:
 
 
 class Message:
+
     def __init__(self, user_id, msg_type, msg):
         if msg_type == MsgTypes.MSG_FILE:
             path = os.path.realpath(msg)
