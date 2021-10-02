@@ -1,28 +1,36 @@
 import sqlite3
 from contextlib import closing
 from os import path
+import logging
+import secrets
 
-from server.auth.TokenManager import Token
+logging.basicConfig(level=logging.INFO)
 
 
 def create_db(db_name):
     if ".db" not in db_name:  # Check if db_name is a filename
         db_name += ".db"
     if path.isfile(db_name):  # Check if database file already exists
+        logging.warning("Database has already been created.")
         return
     with closing(sqlite3.connect(db_name)) as connection:
         with closing(connection.cursor()) as cursor:
             # Create the table for the users
-            cursor.execute("CREATE TABLE app_users(user_id INTEGER PRIMARY KEY"
-                           "ASC, username TEXT, password TEXT, token TEXT")
+            create_cmd = "CREATE TABLE app_users(user_id INTEGER PRIMARY KEY "
+            create_cmd += "ASC, username TEXT, password TEXT, token TEXT)"
+            cursor.execute(create_cmd)
+            logging.info("Created table `app_users` for users.")
             # Add record for the server
-            cursor.execute("INSERT INTO app_users (user_id, username, password,"
-                           " token) VALUES (NULL, \"server\", Bruichladdich, "
-                           "?", (Token().get_token()))
+            add_cmd = "INSERT INTO app_users (username, password, token) "
+            add_cmd += "VALUES (\"server\", \"Bruichladdich\", \"{}\")".format(
+                secrets.token_hex(16)
+            )
+            cursor.execute(add_cmd)
+            logging.info("Inserted 'server' user into the `app_users` table.")
 
 
 class DatabaseManager:
-    def __init__(self, db_name):
+    def __init__(self, db_name: str):
         if ".db" not in db_name:  # Check if db_name is a filename
             db_name += ".db"
         self.db_name = db_name

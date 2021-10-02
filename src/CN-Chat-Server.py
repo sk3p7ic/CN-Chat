@@ -1,5 +1,10 @@
+import server.MasterChatServer
+
+
 def main():
-    print("Hello from the server!")
+    server.MasterChatServer.run_master_server()
+
+
 
 if __name__ == "__main__":
     main()
