@@ -52,6 +52,25 @@ class MessageHeader:
             return header.encode()
 
 
+def decode_header(header: bytes):
+    """
+    Decodes the header and returns its elements.
+    :param header: The header that you would like to decode.
+    :return: A dict of keys and values that were contained within the
+    provided header. Returns a blank dict if the given header does not contain
+    the appropriate information of if the length of the header is not 50.
+    """
+    if len(header) != 50:
+        return {}
+    # Decode the header from bytes to string and split into list by newlines
+    lines = header.decode().split('\n')
+    # Delete the last element if it is blank
+    if lines[-1] == '':
+        del lines[-1]
+    # Return [(key, val)] for each element in the header array
+    return dict([(item.split(' ')[0], item.split(' ')[1]) for item in lines])
+
+
 class Message:
 
     def __init__(self, user_id, msg_type, msg):
@@ -76,4 +95,3 @@ class Message:
         header_resp = send_and_verify(self.header)
         msg_resp = send_and_verify(self.msg)
         return header_resp, msg_resp
-
