@@ -60,6 +60,8 @@ def decode_header(header: bytes):
     provided header. Returns a blank dict if the given header does not contain
     the appropriate information of if the length of the header is not 50.
     """
+    def split_values(line):
+        return line.split(' ')[0].strip(':'), line.split(' ')[1]
     if len(header) != 50:
         return {}
     # Decode the header from bytes to string and split into list by newlines
@@ -68,7 +70,7 @@ def decode_header(header: bytes):
     if lines[-1] == '':
         del lines[-1]
     # Return [(key, val)] for each element in the header array
-    return dict([(item.split(' ')[0], item.split(' ')[1]) for item in lines])
+    return dict([split_values(line) for line in lines])
 
 
 class Message:
