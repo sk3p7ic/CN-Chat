@@ -4,7 +4,11 @@ import secrets
 from server.db.DBManager import DatabaseManager
 
 
-class TokenManager(DatabaseManager):
+class TokenManager():
+
+    def __init__(self, database_manager: DatabaseManager):
+        self.database_manager = database_manager
+        self.cursor = self.database_manager.get_cursor()
 
     def verify_token(self, user_id: int, token: str):
         """
