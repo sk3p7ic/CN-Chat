@@ -4,7 +4,7 @@ import secrets
 from server.db.DBManager import DatabaseManager
 
 
-class TokenManager():
+class TokenManager:
 
     def __init__(self, database_manager: DatabaseManager):
         self.database_manager = database_manager

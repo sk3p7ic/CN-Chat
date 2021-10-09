@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from enum import Enum
 import json
 
+BUFF_SIZE = 1024
+
 
 class MsgTypes(Enum):
     MSG_NAME = 0
@@ -29,16 +31,21 @@ class Message:
     message: bytes  # The data of the message itself
     msg_type: MsgTypes  # The type of the message
 
-    def get_json(self) -> str:
+    def get_json(self):
+        """Returns a dictionary of a message."""
+        return json.loads(self.message)
+
+    def get_json_str(self) -> str:
         """
         Gets a JSON-formatted string from the data stored in this class.
         :return: str.
         """
+        # Build dictionary, convert to JSON, and return
         return json.dumps({"user_id": self.user_id, "message": self.message.decode("utf8"),
                            "msg_type": self.msg_type.name})
 
 
-def get_message_from_json(json_msg: [str, bytes]) -> Message:
+def get_message_from_json(json_msg: str | bytes) -> Message:
     """
     Reads a given message in json format and returns a Message object with that data.
     :param json_msg: The message, either in type str or bytes and formatted as a json string, that will be read.
