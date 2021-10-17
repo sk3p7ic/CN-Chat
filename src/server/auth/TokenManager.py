@@ -37,7 +37,7 @@ class TokenManager:
 
         # Check if the username already exists
         test_user_id = self.cursor.execute("SELECT user_id FROM app_users WHERE username = ?", (username)).fetchall()
-        if len(test_user_id) is not 0:
+        if len(test_user_id) != 0:
             return (False, "Username already exists."), -1, secrets.token_hex(16)
         token = secrets.token_hex(16)  # Generate a new token for the user
         # Insert the user into the database
