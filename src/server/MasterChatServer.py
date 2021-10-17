@@ -20,7 +20,7 @@ SERVER_QUIT = False
 logging.basicConfig(level=logging.INFO)
 
 
-def log_server_msg(level: int | str, msg: str):
+def log_server_msg(level: [int, str], msg: str):
     """
     Logs a given message at a given level with a set format.
     :param level: The logging level of the message.
