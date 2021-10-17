@@ -59,15 +59,26 @@ def accept_connections(server: socket):
                 log_server_msg(logging.WARN, f"Failed login from {client} (user_id: {user_id})")
 
 
+def server_shell():
+    log_server_msg(logging.INFO, "Starting server shell.")
+    global SERVER_QUIT
+    while not SERVER_QUIT:
+        user_input = input()
+        if user_input.lower() == "quit" or user_input.lower() == "stop":
+            SERVER_QUIT = True
+
+
 def run_master_server(host=None, port=None):
     if host is None:
         host = HOST
     if port is None:
         port = PORT
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
+        shell_thread = threading.Thread(target=server_shell)
+        shell_thread.start()
         server.bind((host, port))
         server.listen()
         log_server_msg(logging.INFO, f"Started listening for connections on {host}:{port}")
-        server_thread = threading.Thread(target=accept_connections, args=(server,))
+        server_thread = threading.Thread(target=accept_connections, args=(server,), daemon=True)
         server_thread.start()
-        server_thread.join()
+        shell_thread.join()
