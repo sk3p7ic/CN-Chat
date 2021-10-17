@@ -45,7 +45,7 @@ class Message:
                            "msg_type": self.msg_type.name})
 
 
-def get_message_from_json(json_msg: str | bytes) -> Message:
+def get_message_from_json(json_msg: [str, bytes]) -> Message:
     """
     Reads a given message in json format and returns a Message object with that data.
     :param json_msg: The message, either in type str or bytes and formatted as a json string, that will be read.

@@ -27,6 +27,7 @@ def create_db(db_name):
             )
             cursor.execute(add_cmd)
             logging.info("Inserted 'server' user into the `app_users` table.")
+            connection.commit()  # Commit the changes
 
 
 class DatabaseManager:

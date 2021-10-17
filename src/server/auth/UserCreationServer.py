@@ -14,7 +14,6 @@ def create_new_user(client, token_manager: TokenMgr.TokenManager):
     message = Message(0, b'', MsgTypes.MSG_FAIL)
     client.send(bytes(message.get_json_str(), "utf8"))
     # Get the response from the user containing their desired username and password
-    # TODO: Handle if the username is already taken by another user
     data = client.recv(BUFF_SIZE)
     usr_msg = get_message_from_json(data.decode("utf8"))  # Decode and get the Message that was received
     # Convert the Message into a dict, get the "msg_type", convert to a MsgType, and verify that it is a MSG_NAME
@@ -23,7 +22,12 @@ def create_new_user(client, token_manager: TokenMgr.TokenManager):
         usr_auth_str = usr_msg.get_json()["message"]
         username = usr_auth_str.split("\n")[0]
         password = usr_auth_str.split("\n")[1]
-        user_id, user_token = token_manager.add_user(username, password)  # Attempt to add user to database
+        status, user_id, user_token = token_manager.add_user(username, password)  # Attempt to add user to database
+        if not status[0]:
+            message = Message(0, bytes("Error: " + status[1], "utf8"), MsgTypes.MSG_FAIL)
+            client.send(bytes(message.get_json_str(), "utf8"))
+            data = client.recv(BUFF_SIZE)
+            return False
         # Double check that the user is now valid in the database
         if token_manager.verify_token(user_id, user_token):
             message = Message(0, bytes(f"{user_id}\n{user_token}", "utf8"), MsgTypes.MSG_NAME)
