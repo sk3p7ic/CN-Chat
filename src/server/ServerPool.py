@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 import socket
 
+from server.auth.Exceptions import InvalidMemberError
+
 
 @dataclass
 class UserConnectionInfo:
@@ -23,7 +25,7 @@ class ServerPool:
         if not is_public and (c_len := len(clients)) != 2:
             raise ValueError(f"Server is set to private and does not have 2 clients. (Supplied {c_len}).")
         if clients is not None and type(clients) is not dict:
-            raise ValueError(f"Type of 'clients' is not dict. (Currently {type(clients)}).")
+            raise TypeError(f"Type of 'clients' is not dict. (Currently {type(clients)}).")
         new_server_id = sorted(servers)[-1] + 1  # Get last highest ID and add one
         # Add the server information to the database
         self.cursor.execute("INSERT INTO servers (server_id, server_name) VALUES (?, ?)",
@@ -47,7 +49,7 @@ class ServerPool:
             server_info = self.servers[server_id]
             if client_id not in server_info.get("clients"):  # If the client is not listed as a member of server
                 # TODO: Custom expection name, possibily found in the auth module
-                raise Exception("Client is not allowed in this server.")
+                raise InvalidMemberError("Client is not allowed in this server.")
         except KeyError:
             raise KeyError(f"Server ID, '{server_id}', is not a valid server ID.")
         # TODO: Check if server is running and transfer client socket to that server
