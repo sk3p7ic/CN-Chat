@@ -48,10 +48,13 @@ class ServerPool:
         try:
             server_info = self.servers[server_id]
             if client_id not in server_info.get("clients"):  # If the client is not listed as a member of server
-                # TODO: Custom expection name, possibily found in the auth module
-                raise InvalidMemberError("Client is not allowed in this server.")
+                raise InvalidMemberError(client_id, server_id)
         except KeyError:
             raise KeyError(f"Server ID, '{server_id}', is not a valid server ID.")
+        if client_id not in self.clients:
+            raise KeyError(f"Client with client ID '{client_id}' has not been registered to the server pool.")
+        # Add the client to the server
+        self.servers[server_id]["server_class"].add_client(client_id, self.clients[client_id])
         # TODO: Check if server is running and transfer client socket to that server
         # TODO: If server not running, start the server
 
