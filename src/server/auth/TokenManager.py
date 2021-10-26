@@ -4,7 +4,11 @@ import secrets
 from server.db.DBManager import DatabaseManager
 
 
-class TokenManager(DatabaseManager):
+class TokenManager:
+
+    def __init__(self, database_manager: DatabaseManager):
+        self.database_manager = database_manager
+        self.cursor = self.database_manager.get_cursor()
 
     def verify_token(self, user_id: int, token: str):
         """
@@ -14,7 +18,7 @@ class TokenManager(DatabaseManager):
         :return: True / False if the user is valid / invalid, respectively.
         """
         users = self.cursor.execute("SELECT user_id FROM app_users WHERE "
-                                    "token = ?", token)
+                                    "token = ?", token).fetchall()
         if len(users) != 1 or str(users[0]) != str(user_id):
             return False
         else:
@@ -31,6 +35,10 @@ class TokenManager(DatabaseManager):
         def hash_password():
             return hashlib.md5(password.encode()).hexdigest()
 
+        # Check if the username already exists
+        test_user_id = self.cursor.execute("SELECT user_id FROM app_users WHERE username = ?", (username)).fetchall()
+        if len(test_user_id) != 0:
+            return (False, "Username already exists."), -1, secrets.token_hex(16)
         token = secrets.token_hex(16)  # Generate a new token for the user
         # Insert the user into the database
         self.cursor.execute("INSERT INTO app_users (username, password, token) "
@@ -40,5 +48,6 @@ class TokenManager(DatabaseManager):
         # Get the user_id of the newly-added user
         user_id = self.cursor.execute("SELECT user_id FROM app_users WHERE "
                                       "username = ? AND token = ?",
-                                      (username, token))
-        return user_id, token
+                                      (username, token)).fetchall()
+        self.connection.commit()  # Commit the changes
+        return (True, ""), user_id, token

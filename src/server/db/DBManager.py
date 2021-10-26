@@ -27,12 +27,19 @@ def create_db(db_name):
             )
             cursor.execute(add_cmd)
             logging.info("Inserted 'server' user into the `app_users` table.")
+            connection.commit()  # Commit the changes
 
 
 class DatabaseManager:
     def __init__(self, db_name: str):
         if ".db" not in db_name:  # Check if db_name is a filename
             db_name += ".db"
+        if not path.isfile(db_name):
+            logging.info(f"Creating new database, '{db_name}'")
+            create_db(db_name)
         self.db_name = db_name
         self.connection = sqlite3.connect(self.db_name)  # Connect to db
         self.cursor = self.connection.cursor()  # Create cursor to run queries
+
+    def get_cursor(self):
+        return self.cursor

@@ -1,8 +1,8 @@
-from typing import Any
-
+from dataclasses import dataclass
 from enum import Enum
-import socket
-import os
+import json
+
+BUFF_SIZE = 1024
 
 
 class MsgTypes(Enum):
@@ -13,53 +13,16 @@ class MsgTypes(Enum):
     MSG_FAIL = 4
 
 
-class MessageHeader:
-    @staticmethod
-    def get_msg_size(msg_type: MsgTypes, msg: str) -> int:
-        """
-        Gets the size of the message based odd of the message type.
-        :param msg_type: The type of the message.
-        :param msg: The message, as a string either containing the message or
-        the path to the file that will be sent as the message.
-        :return: Either the length of the string being sent as a message or the
-        size of the file being sent as a message.
-        """
-        if msg_type == MsgTypes.MSG_NAME or msg_type == MsgTypes.MSG_NORM:
-            return len(msg)
-        elif msg_type == MsgTypes.MSG_FILE:
-            return os.stat(msg).st_size
-
-    def __init__(self, user_id, msg_type, msg):
-        self.user_id = str(user_id).zfill(4)
-        self.msg_type = msg_type
-        try:
-            self.msg_len = self.get_msg_size(msg_type, msg)
-        except OSError as err:
-            raise Exception(f"[!] Encountered an error!\n\t{err}")
-
-    def make_header(self):
-        """
-        Creates a properly-formatted message header.
-        :return: The message header.
-        """
-        header = f"User-ID: {self.user_id}\n"
-        header += f"Msg-Type: {self.msg_type.name}\n"
-        header += f"Msg-Length: {str(self.msg_len).zfill(4)}\n"
-        if len(header) != 50:
-            raise Exception("[!] An error occurred generating the header"
-                            "(header length: {})".format(len(header)))
-        else:
-            return header.encode()
-
-
-def decode_header(header: bytes):
+def get_type_from_str(string: str) -> MsgTypes:
     """
-    Decodes the header and returns its elements.
-    :param header: The header that you would like to decode.
-    :return: A dict of keys and values that were contained within the
-    provided header. Returns a blank dict if the given header does not contain
-    the appropriate information of if the length of the header is not 50.
+    Gets a message type from a given message type name.
+    :param string: A string of the name of a type in MsgTypes.
+    :return: MsgTypes.
     """
+    for msg_type in MsgTypes:
+        if string == msg_type.name:
+            return msg_type
+    raise ValueError(f"[E] Value, {string}, not found in MsgTypes...")
     def split_values(line):
         return line.split(' ')[0].strip(':'), line.split(' ')[1]
     if len(header) != 50:
@@ -73,27 +36,38 @@ def decode_header(header: bytes):
     return dict([split_values(line) for line in lines])
 
 
+@dataclass(frozen=True)
 class Message:
+    user_id: int  # The ID of the user that is sending the message
+    message: bytes  # The data of the message itself
+    msg_type: MsgTypes  # The type of the message
 
-    def __init__(self, user_id, msg_type, msg):
-        if msg_type == MsgTypes.MSG_FILE:
-            path = os.path.realpath(msg)
-            self.header = MessageHeader(user_id, msg_type, path).make_header()
-        else:
-            self.header = MessageHeader(user_id, msg_type, msg).make_header()
-        self.msg = msg
+    def get_json(self):
+        """Returns a dictionary of a message."""
+        return json.loads(self.message)
 
-    def transfer_msg(self, conn: socket):
-        def send_and_verify(msg: [str, bytes]):
-            # Ensure that the message is encoded so that it may be sent
-            if type(msg) is not bytes:
-                msg = msg.encode()
-            conn.sendAll(msg)
-            resp = conn.recv(50).decode()
-            if "MSG_PASS" not in resp:
-                raise Exception(f"[!] Error in response:\n{resp}")
-            return resp
+    def get_json_str(self) -> str:
+        """
+        Gets a JSON-formatted string from the data stored in this class.
+        :return: str.
+        """
+        # Build dictionary, convert to JSON, and return
+        return json.dumps({"user_id": self.user_id, "message": self.message.decode("utf8"),
+                           "msg_type": self.msg_type.name})
 
-        header_resp = send_and_verify(self.header)
-        msg_resp = send_and_verify(self.msg)
-        return header_resp, msg_resp
+
+def get_message_from_json(json_msg: [str, bytes]) -> Message:
+    """
+    Reads a given message in json format and returns a Message object with that data.
+    :param json_msg: The message, either in type str or bytes and formatted as a json string, that will be read.
+    :return: Message object containing the given data.
+    """
+    # Decode the message if it is passed as type "bytes"
+    if type(json_msg) is bytes:
+        json_msg = json_msg.decode("utf8")
+    json_data = json.loads(json_msg)  # Read the JSON string and parse into dict
+    # Ensure that the fields we need are in the supplied date
+    if "user_id" not in json_data.keys() or "message" not in json_data.keys() or "msg_type" not in json_data.keys():
+        raise ValueError(f"[E] Needed data types missing in {json_data}")
+    else:
+        return Message(json_data["user_id"], json_data["message"], get_type_from_str(json_data["msg_type"]))
