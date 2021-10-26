@@ -88,6 +88,16 @@ def server_shell():
         user_input = input()
         if user_input.lower() == "quit" or user_input.lower() == "stop":
             SERVER_QUIT = True
+            header = MessageHeader(0, MsgTypes.MSG_PASS, "").make_header()
+        self.request.sendAll(header)
+        msg = self.request.recv(int(data["Msg-Length"])).strip()
+        valid_auth = False
+        if int(data["Msg-Length"]) != 32 and len(msg) != 32:
+            header = MessageHeader(0, MsgTypes.MSG_FAIL,
+                                   "Invalid response.").make_header()
+        else:
+            valid_auth = TOKEN_MANAGER.verify_token(int(data["User-ID"]),
+                                                    msg.decode())
 
 
 def run_master_server(host=None, port=None):

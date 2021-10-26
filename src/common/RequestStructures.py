@@ -23,6 +23,17 @@ def get_type_from_str(string: str) -> MsgTypes:
         if string == msg_type.name:
             return msg_type
     raise ValueError(f"[E] Value, {string}, not found in MsgTypes...")
+    def split_values(line):
+        return line.split(' ')[0].strip(':'), line.split(' ')[1]
+    if len(header) != 50:
+        return {}
+    # Decode the header from bytes to string and split into list by newlines
+    lines = header.decode().split('\n')
+    # Delete the last element if it is blank
+    if lines[-1] == '':
+        del lines[-1]
+    # Return [(key, val)] for each element in the header array
+    return dict([split_values(line) for line in lines])
 
 
 @dataclass(frozen=True)
