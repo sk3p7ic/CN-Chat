@@ -44,6 +44,12 @@ class ServerPool:
 
     def add_client(self, client_id, client_socket, client_address, current_server=None):
         self.clients[client_id] = UserConnectionInfo(client_socket, client_address, current_server)
+        if current_server is not None:
+            try:
+                self.transfer_client(client_id, current_server)
+            except ServerNotStartedError:
+                # Start the server and attempt to connect the user to it
+                pass  # TODO: Write code that does process descibed above
 
 
     def transfer_client(self, client_id, server_id):
@@ -54,12 +60,9 @@ class ServerPool:
             if not bool(server_info.get("is_public")) and client_id not in server_info.get("clients"):
                 raise InvalidMemberError(client_id, server_id)
         except KeyError:
-            raise KeyError(f"Server ID, '{server_id}', is not a valid server ID.")
+            raise ServerNotStartedError(server_id)
         if client_id not in self.clients:
             raise KeyError(f"Client with client ID '{client_id}' has not been registered to the server pool.")
-        # Ensure that the server has been created / is running
-        if server_id not in self.servers:
-            raise ServerNotStartedError(server_id)
         # Add the client to the server
         self.servers[server_id]["server_class"].add_client(client_id, self.clients[client_id])
         # TODO: Check if server is running and transfer client socket to that server
