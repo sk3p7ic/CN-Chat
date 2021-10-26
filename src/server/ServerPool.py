@@ -21,6 +21,17 @@ class ServerPool:
 
 
     def add_server(self, server_name, is_public, clients=None):
+        """
+        Adds a server to the pool of available servers.
+
+        Parameters:
+        :param server_name: str containing the name of the server.
+        :param is_public: bool representing whether the server is public or not.
+        :clients: dict of UserConnectionInfo objects containing information about users. Used mainly for private
+                  servers.
+
+        Throws: TypeError, ValueError
+        """
         # Check inputs to make sure that they are using the correct types
         if type(is_public) is not bool:
             raise TypeError(f"Type of 'is_public' is not dict. (Currently {type(is_public)}).")
@@ -43,6 +54,16 @@ class ServerPool:
 
 
     def add_client(self, client_id, client_socket, client_address, current_server=None):
+        """
+        Adds a client to the dict of clients in the server pool.
+
+        Parameters:
+        :param client_id: int containing the client_id of the client being added.
+        :param client_socket: socket.socket object containing the socket that the user is connected with.
+        :param client_address: str contianing the IP address of the client.
+        :param current_server: int containing the server_id of the server the the user is currently connected to. If
+                               set, attemps to connect the user to that sever via transfer_client().
+        """
         self.clients[client_id] = UserConnectionInfo(client_socket, client_address, current_server)
         if current_server is not None:
             try:
@@ -53,6 +74,15 @@ class ServerPool:
 
 
     def transfer_client(self, client_id, server_id):
+        """
+        Transfers a client to the given server.
+
+        Parameters:
+        :param client_id: int containing the client_id of the client attempting to connect to the server.
+        :param server_id: int containing the server_id that the client is trying to connect to.
+
+        Throws: InvalidMemberError, ServerNotStartedError, KeyError
+        """
         server_info = None
         try:
             server_info = self.servers[server_id]
@@ -70,6 +100,7 @@ class ServerPool:
 
 
     def list_public_servers(self):
+        """Returns a list of tuples of the server_id and server_name fields for the public servers in the pool."""
         server_list = []  # Stores the list of public servers
         for server_id in self.servers:
             server_info = self.servers[server_id]  # Get the information being stored about a server
