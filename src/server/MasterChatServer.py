@@ -14,11 +14,11 @@ from server.ServerPool import ServerPool
 HOST = "127.0.0.1"  # Stores the default hostname
 PORT = 42069  # Stores the default port
 
-DATABASE_MANAGER = DBMgr.DatabaseManager("test")
-TOKEN_MANAGER = TokenMgr.TokenManager(DATABASE_MANAGER)
+database_manager = DBMgr.DatabaseManager("test")
+token_manager = TokenMgr.TokenManager(database_manager)
 SERVER_QUIT = False
 
-SERVER_POOL = ServerPool()
+server_pool = ServerPool()
 
 logging.basicConfig(level=logging.INFO)
 
@@ -47,6 +47,7 @@ def accept_connections(server: socket):
     :param server: socket.socket object containing the main socket that the server is listening on.
     :return: None.
     """
+    global server_pool
     while not SERVER_QUIT:
         client, client_addr = server.accept()  # Accept the connection
         log_server_msg(logging.INFO, f"Connection from {client}:{client_addr}")
@@ -60,10 +61,10 @@ def accept_connections(server: socket):
             user_id = user_auth_str.split("\n")[0]
             user_token = user_auth_str.split("\n")[1]
             # Verify that the token is valid
-            is_valid_token = TOKEN_MANAGER.verify_token(user_id, user_token)
+            is_valid_token = token_manager.verify_token(user_id, user_token)
             if is_valid_token:
                 log_server_msg(logging.INFO, f"Successful login from {client} (user_id: {user_id})")
-                user_info = ServerUser(user_id, client, client_addr)
+                user_info = (user_id, client, client_addr)
                 threading.Thread(target=handle_logged_user, args=(user_info,))  # Start a new thread for client
             else:
                 log_server_msg(logging.WARN, f"Failed login from {client} (user_id: {user_id})")
@@ -76,8 +77,9 @@ def handle_logged_user(user_info):
     :return: None.
     """
     # TODO: Add code allowing the user to connect to a given chat (public / private) and start new chats
+    user_id, client, client_addr = user_info
     destination_server = client.recv(BUFF_SIZE)
-    if destination_server.decode("utf8") in SERVER_POOL.servers:
+    if destination_server.decode("utf8") in server_pool.servers:
         pass  # TODO: Send user to server
 
 
@@ -96,7 +98,7 @@ def server_shell():
             header = MessageHeader(0, MsgTypes.MSG_FAIL,
                                    "Invalid response.").make_header()
         else:
-            valid_auth = TOKEN_MANAGER.verify_token(int(data["User-ID"]),
+            valid_auth = token_manager.verify_token(int(data["User-ID"]),
                                                     msg.decode())
 
 
