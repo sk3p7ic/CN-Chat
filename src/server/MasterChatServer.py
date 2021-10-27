@@ -47,6 +47,7 @@ def accept_connections(server: socket):
     :param server: socket.socket object containing the main socket that the server is listening on.
     :return: None.
     """
+    global SERVER_POOL
     while not SERVER_QUIT:
         client, client_addr = server.accept()  # Accept the connection
         log_server_msg(logging.INFO, f"Connection from {client}:{client_addr}")
@@ -63,7 +64,7 @@ def accept_connections(server: socket):
             is_valid_token = TOKEN_MANAGER.verify_token(user_id, user_token)
             if is_valid_token:
                 log_server_msg(logging.INFO, f"Successful login from {client} (user_id: {user_id})")
-                user_info = ServerUser(user_id, client, client_addr)
+                user_info = (user_id, client, client_addr)
                 threading.Thread(target=handle_logged_user, args=(user_info,))  # Start a new thread for client
             else:
                 log_server_msg(logging.WARN, f"Failed login from {client} (user_id: {user_id})")
@@ -76,6 +77,7 @@ def handle_logged_user(user_info):
     :return: None.
     """
     # TODO: Add code allowing the user to connect to a given chat (public / private) and start new chats
+    user_id, client, client_addr = user_info
     destination_server = client.recv(BUFF_SIZE)
     if destination_server.decode("utf8") in SERVER_POOL.servers:
         pass  # TODO: Send user to server
