@@ -93,9 +93,9 @@ class ServerPool:
             raise ServerNotStartedError(server_id)
         if client_id not in self.clients:
             raise KeyError(f"Client with client ID '{client_id}' has not been registered to the server pool.")
-        # Add the client to the server
+        # Because the code in the try block would throw a KeyError if the server was not running, it can be assumed
+        # that it is, therefore we just add the client to the server
         self.servers[server_id]["server_class"].add_client(client_id, self.clients[client_id])
-        # TODO: Check if server is running and transfer client socket to that server
         # TODO: If server not running, start the server
 
 

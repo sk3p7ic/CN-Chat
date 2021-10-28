@@ -8,6 +8,7 @@ import server.db.DBManager as DBMgr
 import server.auth.TokenManager as TokenMgr
 import common.RequestStructures as RequestStructures
 
+from server.auth.Exceptions import InvalidMemberError, ServerNotStartedError
 from common.RequestStructures import BUFF_SIZE  # Import this var directly
 from server.ServerPool import ServerPool
 
@@ -78,9 +79,19 @@ def handle_logged_user(user_info):
     """
     # TODO: Add code allowing the user to connect to a given chat (public / private) and start new chats
     user_id, client, client_addr = user_info
+    server_pool.add_client(user_id, client, client_addr)  # Add the client to pool of clients in server pool
     destination_server = client.recv(BUFF_SIZE)
-    if destination_server.decode("utf8") in server_pool.servers:
-        pass  # TODO: Send user to server
+    if (server_id := destination_server.decode("utf8")) in server_pool.servers:
+        try:
+            server_pool.transfer_client(user_id, server_id)
+        except ServerNotStartedError as err:  # Shouldn't happen because the server is in server_pool.servers
+            log_server_msg(logging.ERROR, err.msg)  # Log the error
+            pass
+        except InvalidMemberError as err:  # If the client somehow doesn't exist in the server_pool
+            log_server_msg(logging.ERROR, err.msg)  # Log the error
+            # TODO: End client session and log to separate file about the incident
+        except Exception as err:  # Catch any other errors
+            pass  # TODO: Handle the exception
 
 
 def server_shell():
