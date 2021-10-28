@@ -40,12 +40,12 @@ class ServerPool:
         # Check if server is set to private mode and if both clients have been given if the server is private
         if not is_public and (c_len := len(clients)) != 2:
             raise ValueError(f"Server is set to private and does not have 2 clients. (Supplied {c_len}).")
-        new_server_id = sorted(servers)[-1] + 1  # Get last highest ID and add one
+        new_server_id = sorted(self.servers)[-1] + 1  # Get last highest ID and add one
         # Add the server information to the database
         self.cursor.execute("INSERT INTO servers (server_id, server_name) VALUES (?, ?)",
                             (new_server_id, server_name))
         server_info = {
-            "server_class": ChatServer(server_id, clients),
+            "server_class": ChatServer(new_server_id, clients),
             "server_name": server_name,
             "is_public": is_public,
             "clients": clients
@@ -93,9 +93,9 @@ class ServerPool:
             raise ServerNotStartedError(server_id)
         if client_id not in self.clients:
             raise KeyError(f"Client with client ID '{client_id}' has not been registered to the server pool.")
-        # Add the client to the server
+        # Because the code in the try block would throw a KeyError if the server was not running, it can be assumed
+        # that it is, therefore we just add the client to the server
         self.servers[server_id]["server_class"].add_client(client_id, self.clients[client_id])
-        # TODO: Check if server is running and transfer client socket to that server
         # TODO: If server not running, start the server
 
 
@@ -110,7 +110,7 @@ class ServerPool:
         return server_list
 
 
-def ChatServer:
+class ChatServer:
     clients = {}
 
     def __init__(self, server_id, clients=None):
