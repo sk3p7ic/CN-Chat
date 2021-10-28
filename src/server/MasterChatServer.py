@@ -24,7 +24,7 @@ server_pool = ServerPool()
 logging.basicConfig(level=logging.INFO)
 
 
-def log_server_msg(level: [int, str], msg: str):
+def log_server_msg(level: int, msg: str):
     """
     Logs a given message at a given level with a set format.
     :param level: The logging level of the message.
@@ -101,16 +101,6 @@ def server_shell():
         user_input = input()
         if user_input.lower() == "quit" or user_input.lower() == "stop":
             SERVER_QUIT = True
-            header = MessageHeader(0, MsgTypes.MSG_PASS, "").make_header()
-        self.request.sendAll(header)
-        msg = self.request.recv(int(data["Msg-Length"])).strip()
-        valid_auth = False
-        if int(data["Msg-Length"]) != 32 and len(msg) != 32:
-            header = MessageHeader(0, MsgTypes.MSG_FAIL,
-                                   "Invalid response.").make_header()
-        else:
-            valid_auth = token_manager.verify_token(int(data["User-ID"]),
-                                                    msg.decode())
 
 
 def run_master_server(host=None, port=None):

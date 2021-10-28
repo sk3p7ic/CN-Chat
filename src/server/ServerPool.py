@@ -40,12 +40,12 @@ class ServerPool:
         # Check if server is set to private mode and if both clients have been given if the server is private
         if not is_public and (c_len := len(clients)) != 2:
             raise ValueError(f"Server is set to private and does not have 2 clients. (Supplied {c_len}).")
-        new_server_id = sorted(servers)[-1] + 1  # Get last highest ID and add one
+        new_server_id = sorted(self.servers)[-1] + 1  # Get last highest ID and add one
         # Add the server information to the database
         self.cursor.execute("INSERT INTO servers (server_id, server_name) VALUES (?, ?)",
                             (new_server_id, server_name))
         server_info = {
-            "server_class": ChatServer(server_id, clients),
+            "server_class": ChatServer(new_server_id, clients),
             "server_name": server_name,
             "is_public": is_public,
             "clients": clients
@@ -110,7 +110,7 @@ class ServerPool:
         return server_list
 
 
-def ChatServer:
+class ChatServer:
     clients = {}
 
     def __init__(self, server_id, clients=None):
