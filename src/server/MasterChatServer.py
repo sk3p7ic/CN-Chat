@@ -19,7 +19,7 @@ database_manager = DBMgr.DatabaseManager("test")
 token_manager = TokenMgr.TokenManager(database_manager)
 SERVER_QUIT = False
 
-server_pool = ServerPool()
+server_pool = ServerPool(database_manager)
 
 logging.basicConfig(level=logging.INFO)
 
@@ -69,6 +69,7 @@ def accept_connections(server: socket):
                 threading.Thread(target=handle_logged_user, args=(user_info,))  # Start a new thread for client
             else:
                 log_server_msg(logging.WARN, f"Failed login from {client} (user_id: {user_id})")
+                # TODO: Log this message in another security file as well
 
 
 def handle_logged_user(user_info):

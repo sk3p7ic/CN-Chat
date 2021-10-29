@@ -35,8 +35,10 @@ class ServerPool:
         # Check inputs to make sure that they are using the correct types
         if type(is_public) is not bool:
             raise TypeError(f"Type of 'is_public' is not dict. (Currently {type(is_public)}).")
-        if clients is not None and type(clients) is not dict:
-            raise TypeError(f"Type of 'clients' is not dict. (Currently {type(clients)}).")
+        if clients is not None and type(clients) is not list:
+            raise TypeError(f"Type of 'clients' is not list. (Currently {type(clients)}).")
+        if type(clients) == None:
+            clients = []  # Change clients to empty list so that len() can be found
         # Check if server is set to private mode and if both clients have been given if the server is private
         if not is_public and (c_len := len(clients)) != 2:
             raise ValueError(f"Server is set to private and does not have 2 clients. (Supplied {c_len}).")
@@ -122,4 +124,12 @@ class ChatServer:
 
     def add_client(self, client_id, client_info):
         self.clients[client_id] = client_info
+
+
+    def broadcast(self, user_id, message):
+        for client in self.clients:
+            # Check that we don't send the message to the user sending the message
+            if client != user_id:
+                # Send the message via the client's socket
+                self.clients[client].client_socket.sendall(message)
 
