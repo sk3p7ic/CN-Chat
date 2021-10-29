@@ -3,7 +3,7 @@
 
 -- app_users table :: stores the data about the users of the database
 CREATE TABLE IF NOT EXISTS app_users(
-    user_id     INT     NOT NULL,
+    user_id     INT     NOT NULL UNIQUE,
     username    TEXT    NOT NULL,
     password    TEXT    NOT NULL,
     token       TEXT    NOT NULL

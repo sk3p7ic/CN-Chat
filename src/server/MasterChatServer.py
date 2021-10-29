@@ -15,7 +15,7 @@ from server.ServerPool import ServerPool
 HOST = "127.0.0.1"  # Stores the default hostname
 PORT = 42069  # Stores the default port
 
-database_manager = DBMgr.DatabaseManager("test")
+database_manager = DBMgr.DatabaseManager("test", "/server/db/sql/create_db.ddl")
 token_manager = TokenMgr.TokenManager(database_manager)
 SERVER_QUIT = False
 
