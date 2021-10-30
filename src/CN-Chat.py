@@ -1,5 +1,10 @@
+import client.MainWindow
+import client.LoginWindow
+
+
 def main():
-    print("Hello world!")
+    username, password = client.LoginWindow.start()
+    print(f"{username} -- {password}")
 
 
 if __name__ == "__main__":
