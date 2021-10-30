@@ -21,7 +21,6 @@ def create_db(db_name, ddl_path):
             except Exception as err:
                 logging.error(f"Error creating database: {err}")
             tables = cursor.execute("SELECT name FROM sqlite_master WHERE type = 'table';").fetchall()
-            # TODO: Fix the formatting of the table display
             for table in tables:
                 table_data = cursor.execute(f"PRAGMA table_info({table[0]});").fetchall()
                 output = f"[{ctime()}]::SERVER $>> LOADED TABLE: `{table[0]}`:\n"
@@ -32,6 +31,10 @@ def create_db(db_name, ddl_path):
                     name = ("* " + name) if is_pk else ("  " + name)
                     if def_value is None: def_value = ""
                     output += f"{name:25}    {data_type:15}    {not_null!s:<15}    {def_value:15}\n"
+                table_size = connection.execute(f"SELECT * FROM {table[0]};").rowcount
+                if table_size == -1:  # If the table is empty
+                    table_size = 0
+                output += f"Table Size: {table_size} entries.\n"
                 logging.info(output)
             connection.commit()  # Commit the changes
 
