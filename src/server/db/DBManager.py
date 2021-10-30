@@ -1,6 +1,7 @@
 import sqlite3
 from contextlib import closing
 from os import getcwd
+from time import ctime
 import logging
 import secrets
 
@@ -23,10 +24,14 @@ def create_db(db_name, ddl_path):
             # TODO: Fix the formatting of the table display
             for table in tables:
                 table_data = cursor.execute(f"PRAGMA table_info({table[0]});").fetchall()
-                output = f"TABLE: `{table[0]}`:\n"
-                output += "col_name\t\tcol_type\n"
-                for entry in table_data:
-                    output += f"{entry[1]}\t\t{entry[2]}\n"
+                output = f"[{ctime()}]::SERVER $>> LOADED TABLE: `{table[0]}`:\n"
+                output += f"{'col_name':25}    {'col_type':15}    {'not_null':15}    {'default_value':15}\n"
+                output += f"{'-'*25}    {'-'*15}    {'-'*15}    {'-'*15}\n"
+                for col_id, name, data_type, not_null, def_value, is_pk in table_data:
+                    not_null = bool(not_null)  # Explicitly convert this value
+                    name = ("* " + name) if is_pk else ("  " + name)
+                    if def_value is None: def_value = ""
+                    output += f"{name:25}    {data_type:15}    {not_null!s:<15}    {def_value:15}\n"
                 logging.info(output)
             connection.commit()  # Commit the changes
 
