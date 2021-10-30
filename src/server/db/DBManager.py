@@ -40,12 +40,13 @@ def create_db(db_name, ddl_path):
 
 
 class DatabaseManager:
-    def __init__(self, db_name: str, ddl_path):
+    def __init__(self, db_name: str, ddl_path, startup=False):
         if ".db" not in db_name:  # Check if db_name is a filename
             db_name += ".db"
         # TODO: Better handling of the ddl path
         ddl_path = getcwd() + ddl_path
-        create_db(db_name, ddl_path)
+        if startup:
+            create_db(db_name, ddl_path)
         self.db_name = db_name
         self.connection = sqlite3.connect(self.db_name)  # Connect to db
         self.cursor = self.connection.cursor()  # Create cursor to run queries

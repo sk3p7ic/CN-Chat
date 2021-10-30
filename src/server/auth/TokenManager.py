@@ -19,8 +19,8 @@ class TokenManager:
         :return: True / False if the user is valid / invalid, respectively.
         """
         users = self.cursor.execute("SELECT user_id FROM app_users WHERE "
-                                    "token = ?", token).fetchall()
-        if len(users) != 1 or str(users[0]) != str(user_id):
+                                    "token='{}'".format(token)).fetchall()
+        if len(users) != 1 or str(users[0][0]) != str(user_id):
             return False
         else:
             return True

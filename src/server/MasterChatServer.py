@@ -15,12 +15,10 @@ from server.ServerPool import ServerPool
 HOST = "127.0.0.1"  # Stores the default hostname
 PORT = 42069  # Stores the default port
 
-database_manager = DBMgr.DatabaseManager("test", "/server/db/sql/create_db.ddl")
-token_manager = TokenMgr.TokenManager(database_manager)
-token_manager.add_test_user()
+DBMgr.DatabaseManager("test", "/server/db/sql/create_db.ddl", True)  # Initialize database
 SERVER_QUIT = False
 
-server_pool = ServerPool(database_manager)
+server_pool = ServerPool(DBMgr.DatabaseManager("test", "/server/db/sql/create_db.ddl"))
 
 logging.basicConfig(level=logging.INFO)
 
@@ -50,30 +48,29 @@ def accept_connections(server: socket):
     :return: None.
     """
     global server_pool
+    database_manager = DBMgr.DatabaseManager("test", "/server/db/sql/create_db.ddl")
+    token_manager = TokenMgr.TokenManager(database_manager)
     while not SERVER_QUIT:
         client, client_addr = server.accept()  # Accept the connection
         log_server_msg(logging.INFO, f"Connection from {client}:{client_addr}")
         try:
             data = client.recv(BUFF_SIZE)
-            print(data)
             message = RequestStructures.get_message_from_json(data.decode("utf8"))
-            print(message)
             user_auth_str = message.get_json()["message"]  # Get the message content
             if user_auth_str == "-1":
-                print("We somehow got here.")
+                pass
             else:
-                print("Doing the else")
                 # Get the user_id and token for the user from the message that was sent
                 user_id = message.get_json()["user_id"]
-                print(user_id)
                 user_token = user_auth_str
-                print(user_token)
                 # Verify that the token is valid
                 is_valid_token = token_manager.verify_token(user_id, user_token)
                 if is_valid_token:
                     log_server_msg(logging.INFO, f"Successful login from {client} (user_id: {user_id})")
                     user_info = (user_id, client, client_addr)
-                    threading.Thread(target=handle_logged_user, args=(user_info,))  # Start a new thread for client
+                    client_thread = threading.Thread(target=handle_logged_user, args=(user_info,))
+                    client_thread.start()
+                    client_thread.join()
                 else:
                     log_server_msg(logging.WARN, f"Failed login from {client} (user_id: {user_id})")
                     # TODO: Log this message in another security file as well
@@ -92,9 +89,11 @@ def handle_logged_user(user_info):
     """
     # TODO: Add code allowing the user to connect to a given chat (public / private) and start new chats
     # Let the user know that they were sucessfully logged in
+    print("I at least got here! *cries*")
+    user_id, client, client_addr = user_info
     message = RequestStructures.Message(0, b'', RequestStructures.MsgTypes.MSG_PASS)
     client.send(bytes(message.get_json_str(), "utf8"))
-    user_id, client, client_addr = user_info
+    print("Sent {}".format(message))
     server_pool.add_client(user_id, client, client_addr)  # Add the client to pool of clients in server pool
     destination_server = client.recv(BUFF_SIZE)
     if (server_id := destination_server.decode("utf8")) in server_pool.servers:
