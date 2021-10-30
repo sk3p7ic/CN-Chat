@@ -15,11 +15,11 @@ from server.ServerPool import ServerPool
 HOST = "127.0.0.1"  # Stores the default hostname
 PORT = 42069  # Stores the default port
 
-database_manager = DBMgr.DatabaseManager("test")
+database_manager = DBMgr.DatabaseManager("test", "/server/db/sql/create_db.ddl")
 token_manager = TokenMgr.TokenManager(database_manager)
 SERVER_QUIT = False
 
-server_pool = ServerPool()
+server_pool = ServerPool(database_manager)
 
 logging.basicConfig(level=logging.INFO)
 
@@ -52,23 +52,30 @@ def accept_connections(server: socket):
     while not SERVER_QUIT:
         client, client_addr = server.accept()  # Accept the connection
         log_server_msg(logging.INFO, f"Connection from {client}:{client_addr}")
-        data = client.recv(BUFF_SIZE)
-        message = RequestStructures.get_message_from_json(data.decode("utf8"))
-        user_auth_str = message.get_json()["message"]  # Get the message content
-        if user_auth_str == "-1":
-            pass
-        else:
-            # Get the user_id and token for the user from the message that was sent
-            user_id = user_auth_str.split("\n")[0]
-            user_token = user_auth_str.split("\n")[1]
-            # Verify that the token is valid
-            is_valid_token = token_manager.verify_token(user_id, user_token)
-            if is_valid_token:
-                log_server_msg(logging.INFO, f"Successful login from {client} (user_id: {user_id})")
-                user_info = (user_id, client, client_addr)
-                threading.Thread(target=handle_logged_user, args=(user_info,))  # Start a new thread for client
+        try:
+            data = client.recv(BUFF_SIZE)
+            message = RequestStructures.get_message_from_json(data.decode("utf8"))
+            user_auth_str = message.get_json()["message"]  # Get the message content
+            if user_auth_str == "-1":
+                pass
             else:
-                log_server_msg(logging.WARN, f"Failed login from {client} (user_id: {user_id})")
+                # Get the user_id and token for the user from the message that was sent
+                user_id = user_auth_str.split("\n")[0]
+                user_token = user_auth_str.split("\n")[1]
+                # Verify that the token is valid
+                is_valid_token = token_manager.verify_token(user_id, user_token)
+                if is_valid_token:
+                    log_server_msg(logging.INFO, f"Successful login from {client} (user_id: {user_id})")
+                    user_info = (user_id, client, client_addr)
+                    threading.Thread(target=handle_logged_user, args=(user_info,))  # Start a new thread for client
+                else:
+                    log_server_msg(logging.WARN, f"Failed login from {client} (user_id: {user_id})")
+                    # TODO: Log this message in another security file as well
+        except Exception as err:
+            log_server_msg(logging.ERROR, f"Error in connection {client_addr}: {err}")
+        finally:
+            # If this statement is readched, it means that there was a disconnect, so print that to the terminal
+            log_server_msg(logging.INFO, "Disconnect from connection {client_addr}")
 
 
 def handle_logged_user(user_info):
