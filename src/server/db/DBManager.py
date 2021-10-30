@@ -1,42 +1,51 @@
 import sqlite3
 from contextlib import closing
-from os import path
+from os import getcwd
+from time import ctime
 import logging
 import secrets
 
 logging.basicConfig(level=logging.INFO)
 
 
-def create_db(db_name):
+def create_db(db_name, ddl_path):
     if ".db" not in db_name:  # Check if db_name is a filename
         db_name += ".db"
-    if path.isfile(db_name):  # Check if database file already exists
-        logging.warning("Database has already been created.")
-        return
     with closing(sqlite3.connect(db_name)) as connection:
         with closing(connection.cursor()) as cursor:
-            # Create the table for the users
-            create_cmd = "CREATE TABLE app_users(user_id INTEGER PRIMARY KEY "
-            create_cmd += "ASC, username TEXT, password TEXT, token TEXT)"
-            cursor.execute(create_cmd)
-            logging.info("Created table `app_users` for users.")
-            # Add record for the server
-            add_cmd = "INSERT INTO app_users (username, password, token) "
-            add_cmd += "VALUES (\"server\", \"Bruichladdich\", \"{}\")".format(
-                secrets.token_hex(16)
-            )
-            cursor.execute(add_cmd)
-            logging.info("Inserted 'server' user into the `app_users` table.")
+            # Import the sql used to create the server
+            try:
+                with open(ddl_path, 'r') as ddl_file:
+                    # Execute the script to set up the database
+                    cursor.executescript(ddl_file.read())
+            except Exception as err:
+                logging.error(f"Error creating database: {err}")
+            tables = cursor.execute("SELECT name FROM sqlite_master WHERE type = 'table';").fetchall()
+            for table in tables:
+                table_data = cursor.execute(f"PRAGMA table_info({table[0]});").fetchall()
+                output = f"[{ctime()}]::SERVER $>> LOADED TABLE: `{table[0]}`:\n"
+                output += f"{'col_name':25}    {'col_type':15}    {'not_null':15}    {'default_value':15}\n"
+                output += f"{'-'*25}    {'-'*15}    {'-'*15}    {'-'*15}\n"
+                for col_id, name, data_type, not_null, def_value, is_pk in table_data:
+                    not_null = bool(not_null)  # Explicitly convert this value
+                    name = ("* " + name) if is_pk else ("  " + name)
+                    if def_value is None: def_value = ""
+                    output += f"{name:25}    {data_type:15}    {not_null!s:<15}    {def_value:15}\n"
+                table_size = connection.execute(f"SELECT * FROM {table[0]};").rowcount
+                if table_size == -1:  # If the table is empty
+                    table_size = 0
+                output += f"Table Size: {table_size} entries.\n"
+                logging.info(output)
             connection.commit()  # Commit the changes
 
 
 class DatabaseManager:
-    def __init__(self, db_name: str):
+    def __init__(self, db_name: str, ddl_path):
         if ".db" not in db_name:  # Check if db_name is a filename
             db_name += ".db"
-        if not path.isfile(db_name):
-            logging.info(f"Creating new database, '{db_name}'")
-            create_db(db_name)
+        # TODO: Better handling of the ddl path
+        ddl_path = getcwd() + ddl_path
+        create_db(db_name, ddl_path)
         self.db_name = db_name
         self.connection = sqlite3.connect(self.db_name)  # Connect to db
         self.cursor = self.connection.cursor()  # Create cursor to run queries
