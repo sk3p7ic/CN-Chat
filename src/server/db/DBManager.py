@@ -52,3 +52,9 @@ class DatabaseManager:
 
     def get_cursor(self):
         return self.cursor
+
+    def get_connection(self):
+        return self.connection
+
+    def get_app_user_table_size(self):
+        return self.connection.execute(f"SELECT * FROM app_users;").rowcount

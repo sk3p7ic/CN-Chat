@@ -17,6 +17,7 @@ PORT = 42069  # Stores the default port
 
 database_manager = DBMgr.DatabaseManager("test", "/server/db/sql/create_db.ddl")
 token_manager = TokenMgr.TokenManager(database_manager)
+token_manager.add_test_user()
 SERVER_QUIT = False
 
 server_pool = ServerPool(database_manager)
@@ -54,14 +55,19 @@ def accept_connections(server: socket):
         log_server_msg(logging.INFO, f"Connection from {client}:{client_addr}")
         try:
             data = client.recv(BUFF_SIZE)
+            print(data)
             message = RequestStructures.get_message_from_json(data.decode("utf8"))
+            print(message)
             user_auth_str = message.get_json()["message"]  # Get the message content
             if user_auth_str == "-1":
-                pass
+                print("We somehow got here.")
             else:
+                print("Doing the else")
                 # Get the user_id and token for the user from the message that was sent
-                user_id = user_auth_str.split("\n")[0]
-                user_token = user_auth_str.split("\n")[1]
+                user_id = message.get_json()["user_id"]
+                print(user_id)
+                user_token = user_auth_str
+                print(user_token)
                 # Verify that the token is valid
                 is_valid_token = token_manager.verify_token(user_id, user_token)
                 if is_valid_token:
@@ -75,7 +81,7 @@ def accept_connections(server: socket):
             log_server_msg(logging.ERROR, f"Error in connection {client_addr}: {err}")
         finally:
             # If this statement is readched, it means that there was a disconnect, so print that to the terminal
-            log_server_msg(logging.INFO, "Disconnect from connection {client_addr}")
+            log_server_msg(logging.INFO, f"Disconnect from connection {client_addr}")
 
 
 def handle_logged_user(user_info):
@@ -85,6 +91,9 @@ def handle_logged_user(user_info):
     :return: None.
     """
     # TODO: Add code allowing the user to connect to a given chat (public / private) and start new chats
+    # Let the user know that they were sucessfully logged in
+    message = RequestStructures.Message(0, b'', RequestStructures.MsgTypes.MSG_PASS)
+    client.send(bytes(message.get_json_str(), "utf8"))
     user_id, client, client_addr = user_info
     server_pool.add_client(user_id, client, client_addr)  # Add the client to pool of clients in server pool
     destination_server = client.recv(BUFF_SIZE)

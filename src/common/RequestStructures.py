@@ -44,7 +44,8 @@ class Message:
 
     def get_json(self):
         """Returns a dictionary of a message."""
-        return json.loads(self.message)
+        #return json.loads(self.message)
+        return {"user_id": self.user_id, "message": self.message.decode("utf8"), "msg_type": self.msg_type.name}
 
     def get_json_str(self) -> str:
         """
@@ -70,4 +71,4 @@ def get_message_from_json(json_msg: [str, bytes]) -> Message:
     if "user_id" not in json_data.keys() or "message" not in json_data.keys() or "msg_type" not in json_data.keys():
         raise ValueError(f"[E] Needed data types missing in {json_data}")
     else:
-        return Message(json_data["user_id"], json_data["message"], get_type_from_str(json_data["msg_type"]))
+        return Message(int(json_data["user_id"]), bytes(json_data["message"], "utf8"), get_type_from_str(json_data["msg_type"]))
