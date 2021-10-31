@@ -1,17 +1,26 @@
-import configparser
-import os.path
-import hashlib
 import tkinter as tk
-from time import sleep
+import configparser
+import hashlib  # Used to hash the password(s) the user enters
+import os.path  # Used to check if the tokenfile exists
 
 from common.RequestStructures import *
 
 
 class LoginWindow(tk.Frame):
     def __init__(self, tk_root, config, server):
+        """
+        Creates the Login Window for the application.
+
+        Parameters:
+        :param tk_root: The root window for the tkinter application.
+        :param config: The config settings for the application.
+        :param server: socket.socket socket connection to the main CN-Chat server.
+        """
+        # Set main class variables
         self.root = tk_root
         self.config = config
         self.server = server
+        # Further initialize tkinter
         super().__init__(tk_root)
         self.pack()
         # Create the labels
@@ -36,19 +45,23 @@ class LoginWindow(tk.Frame):
 
     def submit(self):
         """Called when the user clicks the submit button."""
+        # Get the values from the Entry widgets
         self.username = self.tk_username.get()
         self.password = self.tk_password.get()
+        # Attempt to authenticate the user
         is_authenticated = self.attempt_validation()
         # TODO: Destroy this window if True
         self.root.destroy()
 
     def attempt_validation(self):
+        """Attempts to authenticate the user with their username and password. Returns True if successful."""
+        # TODO: Handle if authentication fails and allow the user to try again
+        # TODO: Handle if the user would like to make a new account
         token, user_id, response_code = self.get_token()
         if response_code == 0:
             message = Message(user_id, bytes(token, "utf8"), MsgTypes.MSG_NAME)
             # Send the json string to the server
             self.server.send(bytes(message.get_json_str(), "utf8"))
-            print("sent")
             data = self.server.recv(BUFF_SIZE)
             server_msg = get_message_from_json(data.decode("utf8"))  # Decode and get the Message that was recieved
             if get_type_from_str(server_msg.get_json()["msg_type"]) is MsgTypes.MSG_PASS:
@@ -61,11 +74,20 @@ class LoginWindow(tk.Frame):
         return self.username, self.password
 
     def get_token(self):
-        tokenfile_path = self.config["DEFAULT"]["tokenfile_location"]
-        print(tokenfile_path)
-        if os.path.exists(tokenfile_path):
-            with open(tokenfile_path, 'r') as tokenfile:
-                contents = tokenfile.read()
+        """
+        Gets the token from the tokenfile.
+
+        :return: If the username and password are correct and the tokenfile exists, the token, user_id, and a response
+                 code of 0 to show successful operation. Otherwise None is returned for the token and -1 for the
+                 user_id. The other response codes are as follows:
+                 1: The tokenfile does not exist.
+                 2: The tokenfile is empty.
+                 3: The tokenfile contains too many lines or is not properly formatted.
+        """
+        tokenfile_path = self.config["DEFAULT"]["tokenfile_location"]  # Get the location of the tokenfile
+        if os.path.exists(tokenfile_path):  # If the tokenfile exists, continue
+            with open(tokenfile_path, 'r') as tokenfile:  # Open the tokenfile
+                contents = tokenfile.read()  # Get the contents of the file
                 if len(contents) == 0:  # If there's nothing in the file
                     print("ERROR: There is nothing in the token file!")
                     return None, -1, 2
@@ -77,7 +99,7 @@ class LoginWindow(tk.Frame):
                 username, password, user_id = lines[0].split(' ')
                 if username == self.username and password == hashlib.md5(self.password.encode()).hexdigest():
                     return lines[1], user_id, 0  # This line will contain the token
-        else:
+        else:  # If the tokenfile does not exist
             print("ERROR: Tokenfile does not exist!")
             return None, -1, 1
 
