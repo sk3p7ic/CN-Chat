@@ -67,11 +67,44 @@ class LoginWindow(tk.Frame):
             if get_type_from_str(server_msg.get_json()["msg_type"]) is MsgTypes.MSG_PASS:
                 print("We were logged in")
                 return True
+            elif get_type_from_str(server_msg.get_json()["msg_type"]) is MsgTypes.MSG_FAIL:
+                pass
+        elif response_code == 1:  # If the tokenfile did not exist, create the new user
+            message = Message(-1, b"-1", MsgTypes.MSG_NAME)
+            # Send the json string to the server
+            self.server.send(bytes(message.get_json_str(), "utf8"))
+            data = self.server.recv(BUFF_SIZE)
+            server_msg = get_message_from_json(data.decode("utf8"))  # Decode and get the Message that was recieved
+            if get_type_from_str(server_msg.get_json()["msg_type"]) is not MsgTypes.MSG_FAIL:
+                print("There was an error.")
+                return False
+            else:
+                # Create the message with the new user info to send to the server
+                message = Message(-1, bytes(f"{self.username} {hashlib.md5(self.password.encode()).hexdigest()}",
+                                            "utf8"), MsgTypes.MSG_NAME)
+                # Send the json string to the server
+                self.server.send(bytes(message.get_json_str(), "utf8"))
+                data = self.server.recv(BUFF_SIZE)
+                server_msg = get_message_from_json(data.decode("utf8"))  # Decode and get the Message that was recieved
+                if get_type_from_str(server_msg.get_json()["msg_type"]) is MsgTypes.MSG_NAME:
+                    content = server_msg.get_json()["message"]
+                    user_id, token = content.split('\n')  # Split the content sent by server and unpack
+                    self.write_token(user_id, token)  # Write the information to the tokenfile
+                else:  # If there was some kind of error
+                    print(server_msg.get_json()["message"])
+                    return False
         return False
 
     def get_inputs(self):
         """Returns the inputs that the user gave for ther username and password"""
         return self.username, self.password
+
+    def write_token(self, user_id, token):
+        """Writes the token and user information to the tokenfile."""
+        tokenfile_path = self.config["DEFAULT"]["tokenfile_location"]  # Get the location of the tokenfile
+        with open(tokenfile_path, 'w') as tokenfile:
+            lines = f"{self.username} {hashlib.md5(self.password.encode()).hexdigest()} {user_id}\n{token}\n"
+            tokenfile.write(lines)  # Write the lines to the file
 
     def get_token(self):
         """
