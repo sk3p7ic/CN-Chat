@@ -101,6 +101,7 @@ def accept_connections(server: socket):
             if user_token == "-1":
                 user_added, user_id = create_new_user(client, token_manager)
                 if user_added:  # If the user was sucessfully added
+                    # TODO: Display that a new user was created
                     user_info = (user_id, client, client_addr)
                     client_thread = threading.Thread(target=handle_logged_user, args=(user_info,))
                     client_thread.start()

@@ -31,7 +31,7 @@ def create_db(db_name, ddl_path):
                     name = ("* " + name) if is_pk else ("  " + name)
                     if def_value is None: def_value = ""
                     output += f"{name:25}    {data_type:15}    {not_null!s:<15}    {def_value:15}\n"
-                table_size = connection.execute(f"SELECT * FROM {table[0]};").rowcount
+                table_size = len(cursor.execute(f"SELECT * FROM {table[0]};").fetchall())
                 if table_size == -1:  # If the table is empty
                     table_size = 0
                 output += f"Table Size: {table_size} entries.\n"
@@ -58,4 +58,4 @@ class DatabaseManager:
         return self.connection
 
     def get_app_user_table_size(self):
-        return self.connection.execute(f"SELECT * FROM app_users;").rowcount
+        return len(self.cursor.execute(f"SELECT * FROM app_users;").fetchall())
