@@ -31,7 +31,7 @@ def create_db(db_name, ddl_path):
                     name = ("* " + name) if is_pk else ("  " + name)
                     if def_value is None: def_value = ""
                     output += f"{name:25}    {data_type:15}    {not_null!s:<15}    {def_value:15}\n"
-                table_size = connection.execute(f"SELECT * FROM {table[0]};").rowcount
+                table_size = len(cursor.execute(f"SELECT * FROM {table[0]};").fetchall())
                 if table_size == -1:  # If the table is empty
                     table_size = 0
                 output += f"Table Size: {table_size} entries.\n"
@@ -40,15 +40,22 @@ def create_db(db_name, ddl_path):
 
 
 class DatabaseManager:
-    def __init__(self, db_name: str, ddl_path):
+    def __init__(self, db_name: str, ddl_path, startup=False):
         if ".db" not in db_name:  # Check if db_name is a filename
             db_name += ".db"
         # TODO: Better handling of the ddl path
         ddl_path = getcwd() + ddl_path
-        create_db(db_name, ddl_path)
+        if startup:
+            create_db(db_name, ddl_path)
         self.db_name = db_name
         self.connection = sqlite3.connect(self.db_name)  # Connect to db
         self.cursor = self.connection.cursor()  # Create cursor to run queries
 
     def get_cursor(self):
         return self.cursor
+
+    def get_connection(self):
+        return self.connection
+
+    def get_app_user_table_size(self):
+        return len(self.cursor.execute(f"SELECT * FROM app_users;").fetchall())
