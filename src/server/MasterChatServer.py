@@ -134,7 +134,6 @@ def handle_logged_user(user_info):
     """
     # TODO: Add code allowing the user to connect to a given chat (public / private) and start new chats
     # Let the user know that they were sucessfully logged in
-    print("I at least got here! *cries*")
     user_id, client, client_addr = user_info
     message = RequestStructures.Message(0, b'', RequestStructures.MsgTypes.MSG_PASS)
     client.send(bytes(message.get_json_str(), "utf8"))
