@@ -9,37 +9,18 @@ import server.auth.TokenManager as TokenMgr
 import common.RequestStructures as RequestStructures
 
 from server.auth.Exceptions import InvalidMemberError, ServerNotStartedError
+from server.shells.ServerShell import log_server_msg, start_shell
 from common.RequestStructures import BUFF_SIZE  # Import this var directly
 from server.ServerPool import ServerPool
 
 HOST = "127.0.0.1"  # Stores the default hostname
 PORT = 42069  # Stores the default port
 
-DBMgr.DatabaseManager("test", "/server/db/sql/create_db.ddl", True)  # Initialize database
+DATABASE_NAME = "test"
+DBMgr.DatabaseManager(DATABASE_NAME, "/server/db/sql/create_db.ddl", True)  # Initialize database
 SERVER_QUIT = False
 
 server_pool = ServerPool(DBMgr.DatabaseManager("test", "/server/db/sql/create_db.ddl"))
-
-logging.basicConfig(level=logging.INFO)
-
-
-def log_server_msg(level: int, msg: str):
-    """
-    Logs a given message at a given level with a set format.
-    :param level: The logging level of the message.
-    :param msg: The message you want to log.
-    :return: None.
-    """
-    msg = f"[{ctime()}]::SERVER $>> " + msg
-    if level is logging.INFO:
-        logging.info(msg)
-    elif level is logging.WARNING:
-        logging.warning(msg)
-    elif level is logging.ERROR:
-        logging.error(msg)
-    elif level is logging.CRITICAL:
-        logging.critical(msg)
-
 
 def create_new_user(client, token_manager: TokenMgr.TokenManager):
     """
@@ -89,7 +70,8 @@ def accept_connections(server: socket):
     :return: None.
     """
     global server_pool
-    database_manager = DBMgr.DatabaseManager("test", "/server/db/sql/create_db.ddl")
+    global DATABASE_NAME
+    database_manager = DBMgr.DatabaseManager(DATABASE_NAME, "/server/db/sql/create_db.ddl")
     token_manager = TokenMgr.TokenManager(database_manager)
     while not SERVER_QUIT:
         client, client_addr = server.accept()  # Accept the connection
@@ -156,11 +138,10 @@ def handle_logged_user(user_info):
 
 def server_shell():
     log_server_msg(logging.INFO, "Starting server shell.")
+    global DATABASE_NAME
     global SERVER_QUIT
     while not SERVER_QUIT:
-        user_input = input()
-        if user_input.lower() == "quit" or user_input.lower() == "stop":
-            SERVER_QUIT = True
+        SERVER_QUIT = start_shell(DATABASE_NAME)
 
 
 def run_master_server(host=None, port=None):
