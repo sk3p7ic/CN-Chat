@@ -1,32 +1,10 @@
 import cmd  # Used to create a command shell
 import logging  # Used to log messages
 
-from time import ctime
-
-import server.db.DBManager as DBManager
-
+from server.db import DBManager
+from server.shells.TermPrinting import log_server_msg
 
 DATABASE_NAME = None
-
-logging.basicConfig(level=logging.INFO)
-
-# TODO: Move this method somewhere else
-def log_server_msg(level: int, msg: str):
-    """
-    Logs a given message at a given level with a set format.
-    :param level: The logging level of the message.
-    :param msg: The message you want to log.
-    :return: None.
-    """
-    msg = f"[{ctime()}]::SERVER $>> " + msg
-    if level is logging.INFO:
-        logging.info(msg)
-    elif level is logging.WARNING:
-        logging.warning(msg)
-    elif level is logging.ERROR:
-        logging.error(msg)
-    elif level is logging.CRITICAL:
-        logging.critical(msg)
 
 
 class MasterChatServerShell(cmd.Cmd):
@@ -88,10 +66,11 @@ class MasterChatServerShell(cmd.Cmd):
 
     def do_dig(self, arg):
         """Shows the contents of a given tablename."""
-        try:
-            self.database_manager.show_table_contents(arg)
-        except Exception as err:
-            log_server_msg(logging.WARN, err.__str__())
+        if len(arg) != 0:
+            try:
+                self.database_manager.show_table_contents(arg)
+            except Exception as err:
+                log_server_msg(logging.WARN, err.__str__())
 
     def list_tables(self, is_verbose):
         self.database_manager.show_all_tables(is_verbose)  # Display the tables in the database
