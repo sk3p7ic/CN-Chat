@@ -1,14 +1,13 @@
-import socket
 import logging
+import socket
 import threading
 
-import server.db.DBManager as DBMgr
 import server.auth.TokenManager as TokenMgr
-
-from server.auth.Exceptions import InvalidMemberError, ServerNotStartedError
-from server.shells.ServerShell import log_server_msg, start_shell
+import server.db.DBManager as DBMgr
 from common.RequestStructures import *
 from server.ServerPool import ServerPool
+from server.auth.Exceptions import InvalidMemberError, ServerNotStartedError
+from server.shells.ServerShell import log_server_msg, start_shell
 
 HOST = "127.0.0.1"  # Stores the default hostname
 PORT = 42069  # Stores the default port
@@ -18,6 +17,7 @@ DBMgr.DatabaseManager(DATABASE_NAME, "/server/db/sql/create_db.ddl", True)  # In
 SERVER_QUIT = False
 
 server_pool = ServerPool(DBMgr.DatabaseManager("test", "/server/db/sql/create_db.ddl"))
+
 
 def create_new_user(client, token_manager: TokenMgr.TokenManager):
     """
@@ -43,14 +43,14 @@ def create_new_user(client, token_manager: TokenMgr.TokenManager):
         status, user_id, user_token = token_manager.add_user(username, password)  # Attempt to add user to database
         if not status[0]:
             message = Message(0, bytes("Error: " + status[1], "utf8"),
-                                                MsgTypes.MSG_FAIL)
+                              MsgTypes.MSG_FAIL)
             client.send(bytes(message.get_json_str(), "utf8"))
             data = client.recv(BUFF_SIZE)
             return False, -1
         # Double check that the user is now valid in the database
         if token_manager.verify_token(user_id, user_token):
             message = Message(0, bytes(f"{user_id}\n{user_token}", "utf8"),
-                                                MsgTypes.MSG_NAME)
+                              MsgTypes.MSG_NAME)
             client.send(bytes(message.get_json_str(), "utf8"))
             data = client.recv(BUFF_SIZE)
             usr_msg = get_message_from_json(data.decode("utf8"))
@@ -102,7 +102,7 @@ def accept_connections(server: socket):
         except Exception as err:
             log_server_msg(logging.ERROR, f"Error in connection {client_addr}: {err}")
         finally:
-            # If this statement is readched, it means that there was a disconnect, so print that to the terminal
+            # If this statement is reached, it means that there was a disconnect, so print that to the terminal
             log_server_msg(logging.INFO, f"Disconnect from connection {client_addr}")
 
 
@@ -113,7 +113,7 @@ def handle_logged_user(user_info):
     :return: None.
     """
     # TODO: Add code allowing the user to connect to a given chat (public / private) and start new chats
-    # Let the user know that they were sucessfully logged in
+    # Let the user know that they were successfully logged in
     user_id, client, client_addr = user_info
     message = Message(0, b'', MsgTypes.MSG_PASS)
     client.send(bytes(message.get_json_str(), "utf8"))
