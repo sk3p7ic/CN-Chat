@@ -2,15 +2,12 @@ import socket
 import logging
 import threading
 
-from time import ctime
-
 import server.db.DBManager as DBMgr
 import server.auth.TokenManager as TokenMgr
-import common.RequestStructures as RequestStructures
 
 from server.auth.Exceptions import InvalidMemberError, ServerNotStartedError
 from server.shells.ServerShell import log_server_msg, start_shell
-from common.RequestStructures import BUFF_SIZE  # Import this var directly
+from common.RequestStructures import *
 from server.ServerPool import ServerPool
 
 HOST = "127.0.0.1"  # Stores the default hostname
@@ -32,32 +29,32 @@ def create_new_user(client, token_manager: TokenMgr.TokenManager):
              created user.
     """
     # Send the client a message to let them know that authentication failed
-    message = RequestStructures.Message(0, b'', RequestStructures.MsgTypes.MSG_FAIL)
+    message = Message(0, b'', MsgTypes.MSG_FAIL)
     client.send(bytes(message.get_json_str(), "utf8"))
     # Get the response from the user containing their desired username and password
     data = client.recv(BUFF_SIZE)
     # Decode and get the Message that was received
-    usr_msg = RequestStructures.get_message_from_json(data.decode("utf8"))
+    usr_msg = get_message_from_json(data.decode("utf8"))
     # Convert the Message into a dict, get the "msg_type", convert to a MsgType, and verify that it is a MSG_NAME
-    if RequestStructures.get_type_from_str(usr_msg.get_json()["msg_type"]) is RequestStructures.MsgTypes.MSG_NAME:
+    if get_type_from_str(usr_msg.get_json()["msg_type"]) is MsgTypes.MSG_NAME:
         # Get the username and password the user wants to use from the content that they sent
         usr_auth_str = usr_msg.get_json()["message"]
         username, password = usr_auth_str.split(' ')  # Get the username and password that was sent and unpack
         status, user_id, user_token = token_manager.add_user(username, password)  # Attempt to add user to database
         if not status[0]:
-            message = RequestStructures.Message(0, bytes("Error: " + status[1], "utf8"),
-                                                RequestStructures.MsgTypes.MSG_FAIL)
+            message = Message(0, bytes("Error: " + status[1], "utf8"),
+                                                MsgTypes.MSG_FAIL)
             client.send(bytes(message.get_json_str(), "utf8"))
             data = client.recv(BUFF_SIZE)
             return False, -1
         # Double check that the user is now valid in the database
         if token_manager.verify_token(user_id, user_token):
-            message = RequestStructures.Message(0, bytes(f"{user_id}\n{user_token}", "utf8"),
-                                                RequestStructures.MsgTypes.MSG_NAME)
+            message = Message(0, bytes(f"{user_id}\n{user_token}", "utf8"),
+                                                MsgTypes.MSG_NAME)
             client.send(bytes(message.get_json_str(), "utf8"))
             data = client.recv(BUFF_SIZE)
-            usr_msg = RequestStructures.get_message_from_json(data.decode("utf8"))
-            if get_type_from_str(usr_msg.get_json()["msg_type"]) is RequestStructures.MsgTypes.MSG_PASS:
+            usr_msg = get_message_from_json(data.decode("utf8"))
+            if get_type_from_str(usr_msg.get_json()["msg_type"]) is MsgTypes.MSG_PASS:
                 return True, user_id
     else:
         return False, -1
@@ -78,7 +75,7 @@ def accept_connections(server: socket):
         log_server_msg(logging.INFO, f"Connection from {client}:{client_addr}")
         try:
             data = client.recv(BUFF_SIZE)
-            message = RequestStructures.get_message_from_json(data.decode("utf8"))
+            message = get_message_from_json(data.decode("utf8"))
             user_token = message.get_json()["message"]  # Get the message content
             if user_token == "-1":
                 user_added, user_id = create_new_user(client, token_manager)
@@ -118,7 +115,7 @@ def handle_logged_user(user_info):
     # TODO: Add code allowing the user to connect to a given chat (public / private) and start new chats
     # Let the user know that they were sucessfully logged in
     user_id, client, client_addr = user_info
-    message = RequestStructures.Message(0, b'', RequestStructures.MsgTypes.MSG_PASS)
+    message = Message(0, b'', MsgTypes.MSG_PASS)
     client.send(bytes(message.get_json_str(), "utf8"))
     print("Sent {}".format(message))
     server_pool.add_client(user_id, client, client_addr)  # Add the client to pool of clients in server pool
